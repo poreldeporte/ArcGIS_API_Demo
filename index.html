@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Find Indoor Soccer Map</title>
+<style>
+  #locateDiv{
+  	position: absolute;
+  	top: 130px;
+  	left: 15px;
+  	z-index: 3;
+  }
+  #searchDiv {
+    position: absolute;
+    z-index: 20;
+    top: 20px;
+    left: 74px;
+  }
+  #BasemapToggleDiv {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    z-index: 50;
+  }
+  html, body, #viewDiv {
+  	height: 100%;
+  	width: 100%;
+    padding: 0;
+    margin: 0;
+  }
+  #buttonsDiv {
+    position: absolute;
+    top: 20px;
+    right: 110px;
+    padding: 12px;
+    background-color: rgba(200, 200, 200, 0.5);
+    border: 1px solid black;
+  }
+  
+  #indicatorSpan {
+    display: inline-block;
+    vertical-align: middle;
+    width: 30px;
+    height: 30px;
+    background-color: rgba(100, 100, 100, 0.8);
+    border: 2px solid #ccc;
+  }
+</style>
+<link rel="stylesheet" href="https://js.arcgis.com/4.0beta3/esri/css/main.css">
+<script src="https://js.arcgis.com/4.0beta3/"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+<script>
+
+var venue = [];
+var venue1 = {
+  lat: 25.799980978176624,
+  lon: -80.20179323748063,
+  ven: "Midtown Soccer",
+  address: "370 NW 24th St",
+  city: "Miami",
+  state: "FL",
+  zip: "33127"
+}
+venue.push(venue1);
+
+var venue2 = {
+  lat: 25.778691982993376,
+  lon:  -80.2021077445,
+  ven: "Downtown Soccer",
+  address: "444 NW 5th St",
+  city: "Miami",
+  state: "FL",
+  zip: "33128"
+}
+venue.push(venue2);
+
+var venue3 = {
+  lat: 25.797946575514047,
+  lon: -80.20306707765718,
+  ven: "Wynwood Indoor Soccer",
+  address: "2222 NW 5th Ave",
+  city: "Miami",
+  state: "FL",
+  zip: "33127"
+}
+venue.push(venue3);
+
+var venue4 = {
+  lat: 25.76905011543604,
+  lon: -80.19003039320252,
+  ven: "Brickell Rooftop Soccer",
+  address: "444 Brickell Ave",
+  city: "Miami",
+  state: "FL",
+  zip: "33131"
+}
+venue.push(venue4);
+
+var venue5 = {
+  lat: 25.76905011543604,
+  lon: -80.19003039320252,
+  ven: "Soccer 5 Tropical Park",
+  address: "7900 SW 40th St",
+  city: "Miami",
+  state: "FL",
+  zip: "33155"
+}
+venue.push(venue5);
+
+
+console.log(venue)
+require([
+  "esri/Map",
+  "esri/views/SceneView",
+  "esri/layers/GraphicsLayer",
+  "esri/widgets/Locate",
+  "esri/widgets/Search",
+  "esri/widgets/Search/SearchViewModel",
+  "esri/widgets/BasemapToggle",
+  "esri/widgets/BasemapToggle/BasemapToggleViewModel",
+  "esri/widgets/Popup",
+  "esri/widgets/Popup/PopupViewModel",
+  "esri/geometry/Circle",
+  "esri/Graphic",
+  "esri/geometry/Point",
+  "esri/geometry/Polyline",
+  "esri/symbols/SimpleMarkerSymbol",
+  "esri/symbols/SimpleLineSymbol",
+  "esri/symbols/SimpleFillSymbol",
+  "dojo/dom",
+  "dojo/on",
+  "dojo/domReady!"
+
+// READ GEOLOCATION DOC
+// Use events on ViewModel
+], function(Map, SceneView, GraphicsLayer, Locate, Search, SearchVM, BasemapToggle, BasemapToggleVM, Popup, PopupVM, Circle, Graphic, Point, Polyline, SimpleMarkerSymbol, SimpleLineSymbol, SimpleFillSymbol, dom, on ){
+	var map = new Map({
+  	basemap: "streets"
+	});
+	var view = new SceneView({
+    container: "viewDiv",  //reference to the scene div created in step 5
+    map: map,  //reference to the map object created before the scene
+    center: [-100, 35],  //sets the center point of view with lon/lat
+    zoom: 4
+  });
+	//This graphics layer will store the graphic used to display the user's location
+	var gl = new GraphicsLayer();
+	map.add(gl);
+
+	var locateBtn = new Locate({
+	  //Setting widget properties in the VM is subject to change
+	  viewModel: {
+	    view: view,   //attaches the Locate button to the view
+	    graphicsLayer: gl  //the layer the locate graphic is assigned to
+	  }
+	}, "locateDiv");  //references the DOM node used to place the widget
+	//startup() must be called to start the widget
+	locateBtn.startup();
+
+	var searchWidget = new Search({
+      //Setting widget properties via viewModel is subject to 
+      //change for the 4.0 final release  
+      viewModel: new SearchVM({
+        view: view
+      })
+  }, "searchDiv");
+  searchWidget.startup();
+
+  var toggle = new BasemapToggle({
+      //Setting widget properties via viewModel is subject to 
+      //change for the 4.0 final release
+      viewModel: new BasemapToggleVM({
+        view: view,
+        secondaryBasemap: "hybrid"
+      })
+  }, "BasemapToggleDiv");
+  toggle.startup();
+
+  //Register events to control
+  var rotateAntiClockwiseSpan = dom.byId("rotateAntiClockwiseSpan");
+  var rotateClockwiseSpan = dom.byId("rotateClockwiseSpan");
+  var indicatorSpan = dom.byId("indicatorSpan");
+  on(rotateClockwiseSpan, "click", function() {
+    rotateView(-1);
+  });
+  on(rotateAntiClockwiseSpan, "click", function() {
+    rotateView(1);
+  });
+  on(indicatorSpan, "click", tiltView);
+
+  //Watch the change on view.camera
+  view.watch("camera", updateIndicator);
+
+  //Create the event's callback functions
+  function rotateView(direction) {
+    var heading = view.camera.heading;
+
+    // Set the heading of the view to the closest multiple of 90 degrees,
+    // depending on the direction of rotation
+    if (direction > 0) {
+      heading = Math.floor((heading + 1e-3) / 90) * 90 + 90;
+    } else {
+      heading = Math.ceil((heading - 1e-3) / 90) * 90 - 90;
+    }
+
+    view.animateTo({
+      heading: heading
+    });
+  }
+
+  function tiltView() {
+    // Get the camera tilt and add a small number for numerical inaccuracies
+    var tilt = view.camera.tilt + 1e-3;
+
+    // Switch between 3 levels of tilt
+    if (tilt >= 80) {
+      tilt = 0;
+    } else if (tilt >= 40) {
+      tilt = 80;
+    } else {
+      tilt = 40;
+    }
+
+    view.animateTo({
+      tilt: tilt
+    });
+  }
+
+  function updateIndicator(camera) {
+    var tilt = camera.tilt;
+    var heading = camera.heading;
+
+    // Update the indicator to reflect the current tilt/heading using
+    // css transforms.
+    var transform = "rotateX(" + 0.8 * tilt +
+      "deg) rotateY(0) rotateZ(" + -heading + "deg)";
+
+    indicatorSpan.style["transform"] = transform;
+    indicatorSpan.style["-webkit-transform"] = transform; //Solution for Safari
+  }
+
+	view.on("click", function(evt) {
+		console.log("View Event: ", evt);
+    var lat = evt.mapPoint.latitude;
+    var lon = evt.mapPoint.longitude;
+
+		view.popup.viewModel.title = "Your Location";
+		view.popup.viewModel.content = "Latitude: " + lat + "| Longitude: " + lon;
+
+		view.popup.viewModel.location = evt.mapPoint;
+		view.popup.viewModel.visible = true;
+  });
+
+  locateBtn.viewModel.on("locate", function(evt){
+		console.log("Event: ", evt);	
+		console.log("Location: ", evt.graphic.geometry);	
+		console.log("Position: ", evt.position.coords.latitude, " ", evt.position.coords.longitude );
+    setTimeout(function(){
+      //First create a point geometry (this is the location of the Titanic)
+      var point = new Point({
+        longitude: evt.position.coords.longitude,
+        latitude: evt.position.coords.latitude
+      });
+     
+      /*************************
+       * Add a polyline graphic
+       *************************/
+
+      var circle = new Circle({
+        center: point,
+        radiusUnit: "esriMiles",
+        radius: 20
+      });
+
+      //Create a symbol for rendering the graphic
+      var fillSymbol = new SimpleFillSymbol({
+        color: [227, 139, 79, 0.8],
+        outline: new SimpleLineSymbol({
+          color: [255, 255, 255],
+          width: 10
+        }),
+      });
+
+      //Add the geometry and symbol to a new graphic
+      var circleGraphic = new Graphic({
+        geometry: circle,
+        symbol: fillSymbol
+      });
+
+      //Add the circle graphic to the GraphicsLayer
+      gl.add(circleGraphic);
+      console.log(gl);
+    }, 3000);
+	});
+});
+
+//Thoughts on adding a Drop Pin Widget
+</script>
+</head>
+<body>
+  <div id="viewDiv">
+  	<div id="BasemapToggleDiv"></div>
+	  <div id="searchDiv"></div>
+	  <div id="locateDiv"></div>
+    <div id="buttonsDiv">
+      <button id="rotateAntiClockwiseSpan" title="Rotate 90°">↻</button>
+      <button id="indicatorSpan"></button>
+      <button id="rotateClockwiseSpan" title="Rotate 90°">↺</button>
+    </div>
+  </div>
+</body>
+</html>
